@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f1">
+  <title>0 to shipped | Resume parser</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17211d;
+      --muted: #69736c;
+      --paper: #f4f6f1;
+      --white: #fff;
+      --line: #dce3dc;
+      --lime: #c8f169;
+      --green: #347553;
+      --green-soft: #e8f3e8;
+      --coral: #e6775c;
+      --coral-soft: #fff0eb;
+      --blue: #477a9d;
+      --blue-soft: #eaf2f7;
+      --shadow: 0 18px 55px rgba(26, 43, 33, .07);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Aptos", "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .shell { width: min(1160px, calc(100% - 64px)); margin: 0 auto; }
+    .topbar {
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; }
+    .brand-mark {
+      width: 33px; height: 33px; display: grid; place-items: center;
+      border-radius: 9px; background: var(--ink); color: var(--lime);
+      font-size: 16px; font-weight: 800; letter-spacing: 0;
+    }
+    .brand-name { font-size: 15px; font-weight: 750; letter-spacing: -.3px; }
+    .brand-name span { font-weight: 450; color: var(--muted); }
+    .top-meta { display: flex; align-items: center; gap: 19px; color: var(--muted); font-size: 12px; }
+    .mock-label { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); font-weight: 650; }
+    .mock-label::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #e8a44d; }
+    main { padding: 57px 0 62px; }
+    .intro { margin-bottom: 34px; animation: rise .55s ease both; }
+    .eyebrow { display: flex; align-items: center; gap: 9px; margin: 0 0 14px; color: var(--green); font-size: 11px; font-weight: 800; letter-spacing: 1.25px; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 19px; height: 2px; background: var(--green); }
+    h1 { max-width: 760px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(42px, 5.2vw, 67px); font-weight: 500; line-height: .99; letter-spacing: -1.7px; }
+    h1 span { color: var(--green); font-style: italic; }
+    .subtitle { max-width: 510px; margin: 17px 0 0; color: var(--muted); font-size: 15px; line-height: 1.65; }
+    .workspace { display: grid; grid-template-columns: minmax(280px, .88fr) minmax(420px, 1.12fr); gap: 18px; align-items: stretch; }
+    .panel { border: 1px solid var(--line); border-radius: 10px; background: var(--white); box-shadow: var(--shadow); animation: rise .55s .08s ease both; }
+    .upload-panel { padding: 25px; display: flex; flex-direction: column; }
+    .section-heading { display: flex; justify-content: space-between; align-items: start; gap: 14px; }
+    .section-heading h2 { margin: 0; font-size: 16px; font-weight: 730; letter-spacing: -.25px; }
+    .section-heading p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .step { width: 27px; height: 27px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: #eef1eb; color: #536158; font-size: 11px; font-weight: 750; }
+    .dropzone {
+      min-height: 245px; margin-top: 25px; padding: 24px 18px; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center; border: 1px dashed #b9c5ba;
+      border-radius: 8px; background: #fbfcfa; transition: border-color .18s ease, background .18s ease, transform .18s ease;
+    }
+    .dropzone.dragging { border-color: var(--green); background: var(--green-soft); transform: scale(1.01); }
+    .file-icon { position: relative; width: 39px; height: 47px; margin-bottom: 17px; border: 1.5px solid #849388; border-radius: 5px; background: white; }
+    .file-icon::before { content: ""; position: absolute; top: 9px; left: 9px; width: 18px; height: 1.5px; background: #aab5ab; box-shadow: 0 7px 0 #aab5ab, 0 14px 0 #aab5ab; }
+    .file-icon::after { content: ""; position: absolute; right: -7px; bottom: -7px; width: 20px; height: 20px; display: grid; place-items: center; border: 2px solid white; border-radius: 50%; background: var(--lime); }
+    .drop-title { margin: 0; font-size: 14px; font-weight: 700; }
+    .drop-copy { margin: 7px 0 15px; color: var(--muted); font-size: 12px; }
+    .choose-button { min-height: 39px; padding: 0 15px; border: 0; border-radius: 6px; background: var(--ink); color: white; font-size: 12px; font-weight: 700; cursor: pointer; transition: background .18s ease, transform .18s ease; }
+    .choose-button:hover { background: var(--green); transform: translateY(-1px); }
+    .file-hint { margin: 13px 0 0; color: #858e87; font-size: 10px; }
+    .file-name { display: none; max-width: 100%; margin: 12px 0 0; overflow: hidden; color: var(--green); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .file-name.visible { display: block; }
+    .privacy-note { display: flex; align-items: center; gap: 9px; margin-top: auto; padding-top: 21px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .privacy-icon { width: 16px; height: 18px; flex: 0 0 auto; border: 1.5px solid #89958c; border-radius: 8px 8px 5px 5px; position: relative; }
+    .privacy-icon::after { content: ""; position: absolute; top: 6px; left: 6px; width: 2px; height: 4px; border-radius: 2px; background: #89958c; }
+    .result-panel { overflow: hidden; animation-delay: .16s; }
+    .result-top { padding: 22px 25px 20px; border-bottom: 1px solid var(--line); }
+    .result-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .result-title h2 { margin: 0; font-size: 16px; font-weight: 730; letter-spacing: -.25px; }
+    .sample-tag { padding: 6px 9px; border-radius: 4px; background: #f1f3ef; color: #68736a; font-size: 9px; font-weight: 750; letter-spacing: .7px; text-transform: uppercase; }
+    .result-context { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+    .score-row { display: grid; grid-template-columns: 128px 1fr; align-items: center; gap: 22px; margin-top: 22px; }
+    .score-ring { --score: 82; width: 122px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--green) calc(var(--score) * 1%), #e8eee7 0); position: relative; }
+    .score-ring::before { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: white; }
+    .score-number { z-index: 1; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+    .score-number strong { font-family: Georgia, "Times New Roman", serif; font-size: 37px; font-weight: 500; letter-spacing: -1px; }
+    .score-number span { margin-top: 5px; color: var(--muted); font-size: 9px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
+    .score-copy .score-kicker { margin: 0 0 7px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .85px; text-transform: uppercase; }
+    .score-copy h3 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 22px; font-weight: 500; letter-spacing: -.35px; }
+    .score-copy p { margin: 7px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .skills-area { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .skill-group { padding: 19px 21px 20px 25px; }
+    .skill-group + .skill-group { border-left: 1px solid var(--line); }
+    .skill-heading { display: flex; align-items: center; gap: 7px; margin: 0 0 13px; font-size: 11px; font-weight: 750; }
+    .skill-count { min-width: 19px; height: 19px; display: inline-grid; place-items: center; border-radius: 50%; font-size: 9px; }
+    .present .skill-count { background: var(--green-soft); color: var(--green); }
+    .missing .skill-count { background: var(--coral-soft); color: #b95740; }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip { padding: 7px 9px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+    .present .chip { background: var(--green-soft); color: #326748; }
+    .missing .chip { background: var(--coral-soft); color: #a94f3b; }
+    .result-footer { display: flex; align-items: flex-start; gap: 9px; margin: 0 25px 21px; padding: 11px 12px; border-radius: 5px; background: var(--blue-soft); color: #48687d; font-size: 10px; line-height: 1.5; }
+    .result-footer strong { color: #31566d; }
+    .info-dot { width: 15px; height: 15px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid #87a3b5; border-radius: 50%; font-family: Georgia, serif; font-size: 10px; font-weight: 700; }
+    .alert { min-height: 18px; margin: 10px 0 0; color: #b44936; font-size: 11px; text-align: center; }
+    .bottom-note { display: flex; justify-content: space-between; gap: 18px; margin-top: 20px; color: #7a847d; font-size: 10px; }
+    .bottom-note span:last-child { text-align: right; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 36px, 560px); }
+      .topbar { min-height: 70px; }
+      .top-meta > span:first-child { display: none; }
+      main { padding: 40px 0 42px; }
+      .intro { margin-bottom: 26px; }
+      h1 { font-size: clamp(43px, 10vw, 59px); }
+      .workspace { grid-template-columns: 1fr; }
+      .upload-panel { padding: 21px; }
+      .dropzone { min-height: 215px; margin-top: 20px; }
+      .privacy-note { margin-top: 17px; padding-top: 0; }
+      .bottom-note { flex-direction: column; gap: 5px; }
+      .bottom-note span:last-child { text-align: left; }
+    }
+    @media (max-width: 410px) {
+      .shell { width: calc(100% - 28px); }
+      .brand-name { font-size: 14px; }
+      .mock-label { padding: 7px 9px; font-size: 10px; }
+      .score-row { grid-template-columns: 105px 1fr; gap: 15px; }
+      .score-ring { width: 103px; }
+      .score-number strong { font-size: 33px; }
+      .score-copy h3 { font-size: 19px; }
+      .skill-group { padding: 17px 12px 17px 15px; }
+      .result-top { padding: 19px 17px; }
+      .result-footer { margin-right: 17px; margin-left: 17px; }
+      .chip { font-size: 9px; padding: 7px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="0 to shipped home">
+        <span class="brand-mark">0
+</span>
+        <span class="brand-name">0 to shipped <span>/ resume parser</span></span>
+      </a>
+      <div class="top-meta">
+        <span>Built for your next application</span>
+        <span class="mock-label">Mock experience</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Resume intelligence, made simple</p>
+        <h1 id="page-title">Know where you <span>stand.</span></h1>
+        <p class="subtitle">Drop in your resume. Get a quick read on your match score, the skills you already bring, and the ones to build next.</p>
+      </section>
+
+      <section class="workspace" aria-label="Resume analysis">
+        <div class="panel upload-panel">
+          <div class="section-heading">
+            <div>
+              <h2>Upload your resume</h2>
+              <p>Start with a PDF to see your match breakdown.</p>
+            </div>
+            <span class="step" aria-label="Step 1">01</span>
+          </div>
+          <div class="dropzone" id="dropzone" role="region" aria-label="PDF upload area">
+            <span class="file-icon" aria-hidden="true"></span>
+            <p class="drop-title">Drop your PDF here</p>
+            <p class="drop-copy">or choose a file from your device</p>
+            <button class="choose-button" id="choose-button" type="button">Choose PDF</button>
+            <input class="sr-only" id="file-input" type="file" accept="application/pdf,.pdf" aria-label="Choose a PDF resume">
+            <p class="file-name" id="file-name" aria-live="polite"></p>
+            <p class="file-hint">PDF only · Max file size 10 MB</p>
+          </div>
+          <p class="alert" id="alert" role="alert"></p>
+          <div class="privacy-note"><span class="privacy-icon" aria-hidden="true"></span><span>Your file stays on this device. This demo does not upload or store it.</span></div>
+        </div>
+
+        <section class="panel result-panel" aria-labelledby="result-heading">
+          <div class="result-top">
+            <div class="result-title">
+              <h2 id="result-heading">Your match snapshot</h2>
+              <span class="sample-tag" id="result-tag">Sample result</span>
+            </div>
+            <p class="result-context" id="result-context">Product Designer resume · General role match</p>
+            <div class="score-row">
+              <div class="score-ring" id="score-ring" role="img" aria-label="Match score: 82 out of 100">
+                <div class="score-number"><strong id="score-value">82</strong><span>out of 100</span></div>
+              </div>
+              <div class="score-copy">
+                <p class="score-kicker">Strong foundation</p>
+                <h3>You're off to a good start.</h3>
+                <p>A clear picture of your strengths, with a few opportunities to stand out even more.</p>
+              </div>
+            </div>
+          </div>
+          <div class="skills-area">
+            <div class="skill-group present">
+              <h3 class="skill-heading">Skills found <span class="skill-count">5</span></h3>
+              <div class="chips" id="present-skills">
+                <span class="chip">Figma</span><span class="chip">Prototyping</span><span class="chip">User research</span><span class="chip">Design systems</span><span class="chip">Accessibility</span>
+              </div>
+            </div>
+            <div class="skill-group missing">
+              <h3 class="skill-heading">Skills to build <span class="skill-count">3</span></h3>
+              <div class="chips" id="missing-skills">
+                <span class="chip">A/B testing</span><span class="chip">Analytics</span><span class="chip">HTML / CSS</span>
+              </div>
+            </div>
+          </div>
+          <div class="result-footer"><span class="info-dot" aria-hidden="true">i</span><span><strong>Demo output:</strong> the score and skills are sample data. Uploading a PDF previews the experience; it does not parse its contents.</span></div>
+        </section>
+      </section>
+      <div class="bottom-note"><span>Thoughtful feedback for your next move.</span><span>Demo mode · No backend or file upload</span></div>
+    </main>
+  </div>
+
+  <script>
+    const fileInput = document.querySelector("#file-input");
+    const chooseButton = document.querySelector("#choose-button");
+    const dropzone = document.querySelector("#dropzone");
+    const fileName = document.querySelector("#file-name");
+    const alert = document.querySelector("#alert");
+    const resultTag = document.querySelector("#result-tag");
+    const resultContext = document.querySelector("#result-context");
+
+    chooseButton.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length) showMockResult(fileInput.files[0]);
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.add("dragging");
+      });
+    });
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.remove("dragging");
+      });
+    });
+    dropzone.addEventListener("drop", (event) => {
+      const [file] = event.dataTransfer.files;
+      if (file) showMockResult(file);
+    });
+
+    function showMockResult(file) {
+      alert.textContent = "";
+      if (!file.name.toLowerCase().endsWith(".pdf") || (file.type && file.type !== "application/pdf")) {
+        alert.textContent = "Please choose a PDF file to continue.";
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert.textContent = "This file is over 10 MB. Choose a smaller PDF.";
+        return;
+      }
+      fileName.textContent = file.name;
+      fileName.classList.add("visible");
+      resultTag.textContent = "Mock analysis";
+      resultContext.textContent = `${file.name} · General role match`;
+    }
+  </script>
+</body>
+</html>
